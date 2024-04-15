@@ -17,7 +17,7 @@ def main():
 	R            = 1        # interaction radius
 	dt           = 0.2      # time step
 	Nt           = 200      # number of time steps
-	N            = 10      # number of balls
+	N            = 80      # number of balls
 	
 	# Initialize
 	np.random.seed(17)      # set the random number generator seed
@@ -80,37 +80,37 @@ def main():
 def dynamic_gen():
 
     # Simulation parameters
-	v0           = 5.0      # velocity
+	v0           = 3.0      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 100       # size of box
-	R            = 1        # interaction radius
+	R            = 5        # interaction radius
 	dt           = 0.1      # time step
-	N            = 2      # number of balls
+	N            = 10      # number of balls
 
     #
-	x,y = np.random.uniform(low=40, high=60, size=(2, N))
+	x,y = np.random.uniform(low=10, high=80, size=(2, N))
 	#x,y = np.zeros(2)+50
-	vx,vy = 0.1*np.random.uniform(low=1, high=1, size=(2, N))
+	vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
 	theta = 2 * np.pi * np.random.rand(N)
-	vx = np.cos(theta)
-	vy = np.sin(theta)
-	dW = np.ones(N)	
+	#theta = -np.pi
+	#vx = 1
+	#vy = 1
+	#dW = np.ones(N)	
 
-	yield x,y,theta, dW
+	yield x,y,theta
 	r = 5
-	k = 40
+	k = 1
 	
     #
 	while True:
-		#print(dW)
-		x += dW*vx*dt; x = x % L
-		y += dW*vy*dt; y = y % L
+		#print(dW
+		theta = theta % (2*np.pi)
 	
-		theta += 0.5*(np.random.rand(N)-0.5)
+		#theta += 0.1*(np.random.rand(N)-0.5)
 		
 		# dx[i,j] = x[i]-x[j]
-		dx = x[:,None]-x[None,:]; dx = (dx) % L 
-		dy = y[:,None]-y[None,:]; dy = (dy) % L
+		dx = x[:,None]-x[None,:]
+		dy = y[:,None]-y[None,:]
 		
         #
 		dr = np.hypot(dx,dy)
@@ -118,20 +118,28 @@ def dynamic_gen():
         
         # size of force if less than or equal to radius
 		force = k*(2*r-dr)
-		
-        #
-		dW = np.sqrt((x-50)**2+(y-50)**2)
-		R = 50
-		dW = np.where(R-dW <= r, -1, 1)
-		
-		#theta = np.where(R-dW <= 2*r,-theta,theta)
-		#print(theta)
-			
-		vx = (v0 *np.cos(theta) + np.ma.sum(force*dx/dr,axis=1))*dt 
-		vy = (v0 *np.sin(theta) + np.ma.sum(force*dy/dr,axis=1))*dt 
+		#print(np.ma.sum(force*dx/dr,axis=1)*dt)
 
-		#print(dW, vx)
-		yield x,y,theta, dW
+		vx += np.ma.sum(force*dx/dr,axis=1)*dt
+		vy += np.ma.sum(force*dy/dr,axis=1)*dt
+		#print(theta)
+		#
+		#ang_centre = math.atan2(y-50,x-50) #% 2*np.pi #- np.pi/2#*180/np.pi
+		#ang_centre = ((ang_centre) % 2*np.pi) - np.pi/2
+		#direc = (theta-ang_centre) % 2*np.pi
+		#print(direc)
+
+		cross_x = np.where(np.sqrt((x-50)**2+(y-50)**2) > 50-r, -3, 1)
+		cross_y = np.where(np.sqrt((x-50)**2+(y-50)**2) > 50-r, -3, 1)
+		theta_n = np.where(np.sqrt((x-50)**2+(y-50)**2) > 50-r, theta+np.pi, theta) % (2*np.pi)
+
+
+		x += cross_x*vx*np.cos(theta)*dt	
+		y += cross_y*vy*np.sin(theta)*dt	
+
+		theta = theta_n
+
+		yield x,y,theta
 
 def scatter_t(x,y,theta,t):
     
