@@ -186,8 +186,6 @@ def dynamic_gen_periodic():
         vx = v0x + np.ma.sum(force*dx/dr,axis=1)*dt
         vy = v0x + np.ma.sum(force*dy/dr,axis=1)*dt
 
-
-
         yield x,y
 
 
