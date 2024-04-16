@@ -16,7 +16,7 @@ def dynamic_gen():
     L            = 100       # size of box
     R            = 5        # interaction radius
     dt           = 0.05      # time step
-    N            = 2      # number of balls
+    N            = 4      # number of balls
       
     #
     x,y = np.random.uniform(low=20, high=80, size=(2, N))
@@ -56,28 +56,20 @@ def dynamic_gen():
 
         cross_x = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 2*np.cos(ang_between), 1)
         cross_y = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 2*np.cos(ang_between), 1)
-
         theta = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), theta +0.2*ori, theta+noise)
         
-        
-
 
         ### collisions ###
         angle_matrix = angles_between_directions_and_vectors(x,y,theta)
         mask = np.where((0<dr)&(dr<2*r), 1,0)
         masked_angle_matrix = angle_matrix * mask
         deflection_angles = np.array(np.sum(masked_angle_matrix, axis=1))
-        gamma_angle = 2*np.pi - find_gamma_angle(x,y,theta)
-        sign = np.sign(gamma_angle - theta)
-        #change = theta - sign*(np.pi - 2*deflection_angles)
-        #theta = np.where(((deflection_angles < np.pi/2)&(deflection_angles > 0)) ,change, theta)
 
-        dr = np.sqrt((x[1]-x[0])**2 + (y[1]-y[0])**2)
-        print(deflection_angles*180/np.pi)
-        print(dr)
-        cross_x = np.where(((dr < 2*r)), -1*np.cos(deflection_angles), cross_x)
-        cross_y = np.where(((dr < 2*r)), -1*np.cos(deflection_angles), cross_y)
 
+        for i in range(N):
+            dr = np.sqrt((x-x[i])**2 + (y-y[i])**2)
+            cross_x = np.where(((dr < 2*r)&(dr>0)), -2*np.cos(deflection_angles), cross_x)
+            cross_y = np.where(((dr < 2*r)&(dr>0)), -2*np.cos(deflection_angles), cross_y)
 
         x += cross_x*v0x*np.cos(theta)*dt
         y += cross_y*v0y*np.sin(theta)*dt
@@ -231,13 +223,12 @@ def scatter(x,y,theta):
     plt.ylim(0,100)
     
 
-    b2c = np.array(vectors_from_point([50,50], x, y))
-    vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[0]
-    plt.quiver(x[0], y[0], 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
-    plt.plot([x[0],x[1]],[y[0],y[1]],'k-')
-    vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[1]
-    plt.quiver(x[1], y[1], 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
+
+    for i in range(np.shape(x)[0]):
+        vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[i]
+        plt.quiver(x[i], y[i], 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
     
+   
 
     theta = np.linspace( 0 , 2 * np.pi , 150 )
     radius = 50
