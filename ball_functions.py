@@ -17,7 +17,7 @@ def main():
 	R            = 1        # interaction radius
 	dt           = 0.2      # time step
 	Nt           = 200      # number of time steps
-	N            = 80      # number of balls
+	N            = 6      # number of balls
 	
 	# Initialize
 	np.random.seed(17)      # set the random number generator seed
@@ -80,35 +80,28 @@ def main():
 def dynamic_gen():
 
     # Simulation parameters
-	v0           = 10.0      # velocity
+	v0           = 100.0      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 100       # size of box
 	R            = 5        # interaction radius
-	dt           = 0.1      # time step
-	N            = 1      # number of balls
-
+	dt           = 0.01      # time step
+	N            = 2      # number of balls
+      
     #
 	x,y = np.random.uniform(low=20, high=80, size=(2, N))
-	#x,y = np.zeros(2)+50
 	vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
 	v0x,v0y = v0*np.random.choice([1,1], size=(2, N))
 	theta = 2 * np.pi * np.random.rand(N)
+	#print(theta)
 
 	yield x,y,theta
 	r = 10
-	k = 2
-	
-    #
-	vx = v0x
-	vy = v0y
 
 	while True:
-		#print(dW
-		theta = theta % (2*np.pi)
-	
-		#theta += 0.8*(np.random.rand(N)-0.5)
+
+		#theta += 0.5*(np.random.rand(N)-0.5)
+
 		
-		# dx[i,j] = x[i]-x[j]
 		dx = x[:,None]-x[None,:]
 		dy = y[:,None]-y[None,:]
 		
@@ -116,55 +109,66 @@ def dynamic_gen():
 		dr = np.hypot(dx,dy)
 		dr = np.ma.masked_where( ~((0<dr)&(dr<r)), dr )
         
-        # size of force if less than or equal to radius
-		force = k*(2*r-dr)
-		#print(np.ma.sum(force*dx/dr,axis=1)*dt)
-
-		vx = np.ma.sum(force*dx/dr,axis=1)*dt
-		vy = np.ma.sum(force*dy/dr,axis=1)*dt
-
 		#
 		b2c = np.array(vectors_from_point([50,50], x, y))
 		vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))
-		#print(b2c)
-		direc = angle_between(b2c, vec_pointing)[0]
-		#print(direc*180/np.pi)
+		ang_between = angle_between(b2c, vec_pointing, N)
+
 		
-		#print(dire)
-		#print('ball to centre:',b2c)
-		#rint('direction:',vec_pointing)
-		#print(b2c)
-		#direc = theta
-		ang_centre = math.atan2(y[0]-50,x[0]-50) #% 2*np.pi #- np.pi/2#*180/np.pi
-		print(ang_centre*180/np.pi)
-		#print(ang_centre)
-		ang_fromy = (ang_centre  - np.pi/2) % (2*np.pi)
-		direc = (theta-ang_fromy) % 2*np.pi
+		ang_centre = np.array([math.atan2(y[i]-50,x[i]-50) % (2*np.pi) for i in range(N)])
 
-		#cross_x = np.where(np.sqrt((x-50)**2+(y-50)**2) > 50-r, -1, 1)
-		#cross_y = np.where(np.sqrt((x-50)**2+(y-50)**2) > 50-r, -1, 1)
-		theta = np.where((np.sqrt((x-50)**2+(y-50)**2) > 50-r)&(direc > np.pi/2), np.pi-direc, theta) % (2*np.pi)
-		#print(theta)
+		
+		diff = (theta-ang_centre)
+		ori = np.sign(diff)
+		#print(diff, np.pi-ang_between)
 
-		#x += cross_x*v0x*np.cos(theta)*dt + vx
-		#y += cross_y*v0y*np.sin(theta)*dt + vy	
 
-		x += v0x*np.cos(theta)*dt + vx
-		y += v0y*np.sin(theta)*dt + vy
+		cross_x = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 1*np.cos(ang_between), 1)
+		cross_y = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 1*np.cos(ang_between), 1)
+		cross_x = np.ones(N)
+		cross_y = np.ones(N)
+		theta = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), theta - ori*(2*np.abs(diff)-np.pi), theta)
 
-		#print(v0x*np.cos(theta), v0y*np.sin(theta))
+		### collisions ###
+		#b2b = np.array(vectors_between_points(x, y))
+		#vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))
+		#ang_between = angles_between_vectors(b2b, vec_pointing)
+            
+		#print(ang_between*180/np.pi)
+        #print(ve)
 
-		#theta = theta_n
+		#np.where(dr < 2*r + 1, ,0)
+
+
+
+		x += cross_x*v0x*np.cos(theta)*dt
+		y += cross_y*v0y*np.sin(theta)*dt
 
 		yield x,y,theta
+            
+def angles_between_vectors(vectors1, vectors2):
+
+    angles = []
+    
+    for vec1, vec2 in zip(vectors1, vectors2):
+        dot_product = np.dot(vec1, vec2)
+        norm_vec1 = np.linalg.norm(vec1)
+        norm_vec2 = np.linalg.norm(vec2)
+        
+        cosine_angle = dot_product / (norm_vec1 * norm_vec2)
+        angle_rad = np.arccos(cosine_angle)
+        angles.append(angle_rad)
+    
+    return np.array(angles)
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
-def angle_between(v1, v2):
+def angle_between(v1, v2, N):
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u.T), -1.0, 1.0))
+    angles = np.array([np.arccos(np.clip(np.dot(v1_u[i], v2_u[i].T), -1.0, 1.0)) for i in range(N)])
+    return angles
 
 def vectors_from_point(ref_point, x_positions, y_positions):
     # Create an array of vectors from ref_point to all other points
@@ -177,6 +181,20 @@ def vectors_from_point(ref_point, x_positions, y_positions):
     unit_vectors = vectors / magnitudes[:, None]
     
     return unit_vectors
+
+def vectors_between_points(xs, ys):
+
+    num_points = len(xs)
+    vectors = []
+    
+    for i in range(num_points):
+        for j in range(num_points):
+            if i != j:
+                dx = xs[j] - xs[i]
+                dy = ys[j] - ys[i]
+                vectors.append((dx, dy))
+    
+    return vectors
 
 def dynamic_gen_periodic():
 
@@ -191,7 +209,7 @@ def dynamic_gen_periodic():
 	
 	x,y = np.random.uniform(low=0, high=L, size=(2, N))
 	v0x,v0y = np.random.uniform(low=-1, high=1, size=(2, N))
-	v0x,v0y = np.random.choice([-1,1], size=(2, N))
+	#v0x,v0y = np.random.choice([-1,1], size=(2, N))
 	
 	yield x,y
 	r = 5
@@ -199,6 +217,7 @@ def dynamic_gen_periodic():
 	vx = v0x
 	vy = v0y
 	while True:
+
 		x += vx*dt; x = x % L
 		y += vy*dt; y = y % L
         # dx[i,j] = x[i]-x[j]
@@ -213,7 +232,10 @@ def dynamic_gen_periodic():
 		vx = v0x + np.ma.sum(force*dx/dr,axis=1)*dt
 		vy = v0x + np.ma.sum(force*dy/dr,axis=1)*dt
 
+
+
 		yield x,y
+
 
 def scatter_t(x,y,theta,t):
     
@@ -242,26 +264,26 @@ def scatter(x,y,theta):
     cmap = cm.gist_rainbow
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     temp = m.to_rgba(np.mod(theta,2*np.pi))
-    plt.scatter(x,y, c = temp, s = 4000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    plt.scatter(x,y, c = temp, s = 10000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
     plt.xlim(0,100)
     plt.ylim(0,100)
 	
-	#
-    #print(theta)
+
     b2c = np.array(vectors_from_point([50,50], x, y))
     vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[0]
-    plt.quiver(x, y, 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
-    plt.plot([50,x[0]],[50,y[0]],'k-')
-
-
+    plt.quiver(x[0], y[0], 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
+    vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[1]
+    plt.quiver(x[1], y[1], 10*vec_pointing[0], 10*vec_pointing[1], angles='xy', scale_units='xy', scale=1)
+    #plt.plot([50,x[0]],[50,y[0]],'k-')
+    
+    plt.plot([x[0],x[1]],[y[0],y[1]],'k-')
+    
 
     theta = np.linspace( 0 , 2 * np.pi , 150 )
     radius = 50
-    
     a = 50+ radius * np.cos( theta )
     b = 50+ radius * np.sin( theta )
-    
-    plt.plot(a, b)
+    plt.plot(a, b, linewidth = 10)
 
 def scatter_period(x,y):
     
@@ -270,6 +292,6 @@ def scatter_period(x,y):
     #cmap = cm.gist_rainbow
     #m = cm.ScalarMappable(norm=norm, cmap=cmap)
     #temp = m.to_rgba(np.mod(theta,2*np.pi))
-    plt.scatter(x,y, s = 400, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    plt.scatter(x,y, s = 1000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
     plt.xlim(0,100)
     plt.ylim(0,100)
