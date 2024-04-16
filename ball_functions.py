@@ -80,12 +80,12 @@ def main():
 def dynamic_gen():
 
     # Simulation parameters
-	v0           = 100.0      # velocity
+	v0           = 50.0      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 100       # size of box
 	R            = 5        # interaction radius
-	dt           = 0.01      # time step
-	N            = 2      # number of balls
+	dt           = 0.05      # time step
+	N            = 8      # number of balls
       
     #
 	x,y = np.random.uniform(low=20, high=80, size=(2, N))
@@ -107,7 +107,7 @@ def dynamic_gen():
 		
         #
 		dr = np.hypot(dx,dy)
-		dr = np.ma.masked_where( ~((0<dr)&(dr<r)), dr )
+		dr = np.ma.masked_where( ~((0<dr)&(dr<2*r)), dr )
         
 		#
 		b2c = np.array(vectors_from_point([50,50], x, y))
@@ -116,7 +116,7 @@ def dynamic_gen():
 
 		
 		ang_centre = np.array([math.atan2(y[i]-50,x[i]-50) % (2*np.pi) for i in range(N)])
-
+		#print(ang_centre*180/np.pi)
 		
 		diff = (theta-ang_centre)
 		ori = np.sign(diff)
@@ -130,36 +130,73 @@ def dynamic_gen():
 		theta = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), theta - ori*(2*np.abs(diff)-np.pi), theta)
 
 		### collisions ###
-		#b2b = np.array(vectors_between_points(x, y))
-		#vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))
-		#ang_between = angles_between_vectors(b2b, vec_pointing)
-            
-		#print(ang_between*180/np.pi)
-        #print(ve)
-
-		#np.where(dr < 2*r + 1, ,0)
-
+		angle_matrix = angles_between_directions_and_vectors(x,y,theta)
+		mask = np.where((0<dr)&(dr<2*r), 1,0)
+		masked_angle_matrix = angle_matrix * mask
+		deflection_angles = np.array(np.sum(masked_angle_matrix, axis=1))
+		gamma_angle = 2*np.pi - find_gamma_angle(x,y,theta)
+		sign = np.sign(gamma_angle - theta)
+		change = theta - sign*(np.pi - 2*deflection_angles)
+		theta = np.where(((deflection_angles < np.pi/2)&(deflection_angles > 0)) ,change, theta)
+     
 
 
 		x += cross_x*v0x*np.cos(theta)*dt
 		y += cross_y*v0y*np.sin(theta)*dt
 
 		yield x,y,theta
-            
-def angles_between_vectors(vectors1, vectors2):
+          
 
-    angles = []
+def find_gamma_angle(x, y, theta):
+    N = len(x)
+    gamma_angle = np.zeros(N)
+
+    for i in range(N):
+        other_angles = []
+        for j in range(N):
+            if j != i:
+                dx = x[j] - x[i]
+                dy = y[j] - y[i]
+                angle = math.atan2(dy, dx) % (2 * np.pi)
+                diff = (angle - theta[i]) % (2 * np.pi)
+                
+                # Use cross-product to determine clockwise or anti-clockwise
+                cross_product = dx * np.sin(diff) - dy * np.cos(diff)
+                if cross_product > 0:
+                    diff = -diff
+                
+                other_angles.append(diff)
+                
+        other_angles = np.array(other_angles)
+        gamma_angle[i] = np.min(np.abs(other_angles))
     
-    for vec1, vec2 in zip(vectors1, vectors2):
-        dot_product = np.dot(vec1, vec2)
-        norm_vec1 = np.linalg.norm(vec1)
-        norm_vec2 = np.linalg.norm(vec2)
-        
-        cosine_angle = dot_product / (norm_vec1 * norm_vec2)
-        angle_rad = np.arccos(cosine_angle)
-        angles.append(angle_rad)
+    return gamma_angle
+
+		  
+def angles_between_directions_and_vectors(x, y, theta):
+
+    N = len(x)
+    angles_matrix = np.zeros((N, N))
     
-    return np.array(angles)
+    for i in range(N):
+        for j in range(N):
+            if i != j:
+                dx = x[j] - x[i]
+                dy = y[j] - y[i]
+                vec_between = np.array([dx, dy])
+                vec_direction = np.array([np.cos(theta[i]), np.sin(theta[i])])
+                
+                dot_product = np.dot(vec_between, vec_direction)
+                norm_vec_between = np.linalg.norm(vec_between)
+                norm_vec_direction = np.linalg.norm(vec_direction)
+                
+                cosine_angle = dot_product / (norm_vec_between * norm_vec_direction)
+                angle_rad = np.arccos(cosine_angle)
+                angles_matrix[i, j] = angle_rad
+    
+    return angles_matrix
+            
+
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
@@ -182,19 +219,6 @@ def vectors_from_point(ref_point, x_positions, y_positions):
     
     return unit_vectors
 
-def vectors_between_points(xs, ys):
-
-    num_points = len(xs)
-    vectors = []
-    
-    for i in range(num_points):
-        for j in range(num_points):
-            if i != j:
-                dx = xs[j] - xs[i]
-                dy = ys[j] - ys[i]
-                vectors.append((dx, dy))
-    
-    return vectors
 
 def dynamic_gen_periodic():
 
