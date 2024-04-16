@@ -80,7 +80,7 @@ def main():
 def dynamic_gen():
 
     # Simulation parameters
-	v0           = 1.0      # velocity
+	v0           = 50.0      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 100       # size of box
 	R            = 5        # interaction radius

@@ -11,18 +11,34 @@ import math
 def dynamic_gen():
 
     # Simulation parameters
-    v0           = 60.0      # velocity
+    v0           = 50.0      # velocity
     eta          = 0.5      # random fluctuation in angle (in radians)
     L            = 100       # size of box
-    R            = 5        # interaction radius
+    R            = 50        # big radius
     dt           = 0.05      # time step
     N            = 4      # number of balls
+    r = 14
+    T = 0
       
     #
     #x,y = np.random.uniform(low=10, high=90, size=(2, N))
     x = np.array([50, 50, 20, 80], dtype=float)
     y = np.array([80, 20, 50, 50], dtype=float)
-    #print(xx)
+
+    #init_thetas = np.array([2*np.pi *i / N for i in range(N)])
+    #r_init = R - r
+    #x = 50 + r_init * np.cos(init_thetas)
+    #y = 50 + r_init * np.sin(init_thetas)
+
+    #x = np.append(x, 50)
+    #y = np.append(y, 50)
+    #N += 1
+    #y  = np.array(list(y).append(50))
+
+
+    #x = np.array([20, 50, 80, 50, 50], dtype=float)
+    #y = np.array([50, 50, 50, 80, 20], dtype=float)
+    
 
     #vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
     v0x,v0y = v0*np.random.choice([1,1], size=(2, N))
@@ -34,8 +50,7 @@ def dynamic_gen():
     ori = 0
 
     yield x,y,theta,ori
-    r = 19
-    T = 0
+
 
     while True:
         T += dt
@@ -238,7 +253,8 @@ def scatter(x,y,theta):
     cmap = cm.gist_rainbow
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     temp = m.to_rgba(np.mod(theta,2*np.pi))
-    plt.scatter(x,y, c = temp, s = 40000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    plt.scatter(x,y, c = temp, s = 22000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    # s = 40000
     plt.xlim(0,100)
     plt.ylim(0,100)
     
