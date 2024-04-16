@@ -11,7 +11,7 @@ import math
 def dynamic_gen():
 
     # Simulation parameters
-    v0           = 50.0      # velocity
+    v0           = 60.0      # velocity
     eta          = 0.5      # random fluctuation in angle (in radians)
     L            = 100       # size of box
     R            = 5        # interaction radius
@@ -19,18 +19,30 @@ def dynamic_gen():
     N            = 4      # number of balls
       
     #
-    x,y = np.random.uniform(low=20, high=80, size=(2, N))
-    vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
+    #x,y = np.random.uniform(low=10, high=90, size=(2, N))
+    x = np.array([50, 50, 20, 80], dtype=float)
+    y = np.array([80, 20, 50, 50], dtype=float)
+    #print(xx)
+
+    #vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
     v0x,v0y = v0*np.random.choice([1,1], size=(2, N))
     theta = 2 * np.pi * np.random.rand(N)
+    phase = np.random.uniform(low=0, high = 2*np.pi, size = N)
+    omega = 2
+    
     #print(theta)
+    ori = 0
 
-    yield x,y,theta
-    r = 10
+    yield x,y,theta,ori
+    r = 19
+    T = 0
 
     while True:
+        T += dt
+        v0x = v0 * (np.sin(10*T)+1)
+        v0y = v0 * (np.sin(10*T)+1)
 
-        noise = 0.5*(np.random.rand(N)-0.5)
+        noise = 0.01*(np.random.rand(N)-0.5)
 
         
         dx = x[:,None]-x[None,:]
@@ -47,16 +59,24 @@ def dynamic_gen():
 
         
         ang_centre = np.array([math.atan2(y[i]-50,x[i]-50) % (2*np.pi) for i in range(N)])
+
+
+        ###
+        
+
+        ###
+
         #print(ang_centre*180/np.pi)
         
         diff = (theta-ang_centre)
         ori = np.sign(diff)
+
         #print(diff, np.pi-ang_between)
 
 
-        cross_x = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 2*np.cos(ang_between), 1)
-        cross_y = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 2*np.cos(ang_between), 1)
-        theta = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), theta +0.2*ori, theta+noise)
+        cross_x = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 1*np.cos(ang_between), 1)
+        cross_y = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), 1*np.cos(ang_between), 1)
+        theta = np.where(((np.sqrt((x-50)**2+(y-50)**2) > 50-r) & (ang_between >= np.pi/2)), theta +0.2*ori, theta + noise)
         
 
         ### collisions ###
@@ -68,13 +88,15 @@ def dynamic_gen():
 
         for i in range(N):
             dr = np.sqrt((x-x[i])**2 + (y-y[i])**2)
-            cross_x = np.where(((dr < 2*r)&(dr>0)), -2*np.cos(deflection_angles), cross_x)
-            cross_y = np.where(((dr < 2*r)&(dr>0)), -2*np.cos(deflection_angles), cross_y)
+            cross_x = np.where(((dr < 2*r)&(dr>0)), -1*np.cos(deflection_angles), cross_x)
+            cross_y = np.where(((dr < 2*r)&(dr>0)), -1*np.cos(deflection_angles), cross_y)
+            theta = np.where(((dr < 2*r)&(dr>0)), theta + 0.1*np.sin(theta[i]-theta), theta)
 
         x += cross_x*v0x*np.cos(theta)*dt
         y += cross_y*v0y*np.sin(theta)*dt
 
-        yield x,y,theta
+
+        yield x,y,theta,ori
           
 
 def find_gamma_angle(x, y, theta):
@@ -216,7 +238,7 @@ def scatter(x,y,theta):
     cmap = cm.gist_rainbow
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     temp = m.to_rgba(np.mod(theta,2*np.pi))
-    plt.scatter(x,y, c = temp, s = 10000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    plt.scatter(x,y, c = temp, s = 40000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
     plt.xlim(0,100)
     plt.ylim(0,100)
     

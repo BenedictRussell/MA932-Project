@@ -11,7 +11,7 @@ import math
 def main():
 
 	# Simulation parameters
-	v0           = 1.0      # velocity
+	v0           = 0.1      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 10       # size of box
 	R            = 1        # interaction radius
@@ -80,12 +80,12 @@ def main():
 def dynamic_gen():
 
     # Simulation parameters
-	v0           = 50.0      # velocity
+	v0           = 1.0      # velocity
 	eta          = 0.5      # random fluctuation in angle (in radians)
 	L            = 100       # size of box
 	R            = 5        # interaction radius
 	dt           = 0.05      # time step
-	N            = 8      # number of balls
+	N            = 10      # number of balls
       
     #
 	x,y = np.random.uniform(low=20, high=80, size=(2, N))
