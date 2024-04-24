@@ -11,24 +11,25 @@ import math
 def dynamic_gen():
 
     # Simulation parameters
-    v0           = 50.0      # velocity
+    v0           = 20.0      # velocity
     eta          = 0.5      # random fluctuation in angle (in radians)
     L            = 100       # size of box
     R            = 50        # big radius
-    dt           = 0.05      # time step
-    N            = 4      # number of balls
+    dt           = 0.02      # time step
+    N            = 5      # number of balls
     r = 14
     T = 0
       
     #
     #x,y = np.random.uniform(low=10, high=90, size=(2, N))
-    x = np.array([50, 50, 20, 80], dtype=float)
-    y = np.array([80, 20, 50, 50], dtype=float)
-
-    #init_thetas = np.array([2*np.pi *i / N for i in range(N)])
-    #r_init = R - r
-    #x = 50 + r_init * np.cos(init_thetas)
-    #y = 50 + r_init * np.sin(init_thetas)
+    #x = np.array([50, 50, 20, 80], dtype=float)
+    #y = np.array([80, 20, 50, 50], dtype=float)
+    k = N -1
+    k = N
+    init_thetas = np.array([2*np.pi *i / k for i in range(k)])
+    r_init = R - r
+    x = 50 + r_init * np.cos(init_thetas)
+    y = 50 + r_init * np.sin(init_thetas)
 
     #x = np.append(x, 50)
     #y = np.append(y, 50)
@@ -41,12 +42,11 @@ def dynamic_gen():
     
 
     #vx,vy = v0*np.random.uniform(low=1, high=1, size=(2, N))
-    v0x,v0y = v0*np.random.choice([1,1], size=(2, N))
     theta = 2 * np.pi * np.random.rand(N)
-    phase = np.random.uniform(low=0, high = 2*np.pi, size = N)
-    omega = 2
+    #phase = np.random.uniform(low=0, high = 2*np.pi, size = N)
+
+    #omega = 2
     
-    #print(theta)
     ori = 0
 
     yield x,y,theta,ori
@@ -57,7 +57,8 @@ def dynamic_gen():
         v0x = v0 * (np.sin(10*T)+1)
         v0y = v0 * (np.sin(10*T)+1)
 
-        noise = 0.01*(np.random.rand(N)-0.5)
+        noise = 0.1*(np.random.rand(N)-0.5)
+        #noise = np.zeros(N)
 
         
         dx = x[:,None]-x[None,:]
@@ -84,6 +85,8 @@ def dynamic_gen():
         #print(ang_centre*180/np.pi)
         
         diff = (theta-ang_centre)
+        #print(ang_centre*180/np.pi)
+        #print(theta*180/np.pi)
         ori = np.sign(diff)
 
         #print(diff, np.pi-ang_between)
@@ -103,15 +106,21 @@ def dynamic_gen():
 
         for i in range(N):
             dr = np.sqrt((x-x[i])**2 + (y-y[i])**2)
+            neigh = np.where((dr < 2*r)&(dr>0), theta, 0)
+
             cross_x = np.where(((dr < 2*r)&(dr>0)), -1*np.cos(deflection_angles), cross_x)
             cross_y = np.where(((dr < 2*r)&(dr>0)), -1*np.cos(deflection_angles), cross_y)
-            theta = np.where(((dr < 2*r)&(dr>0)), theta + 0.1*np.sin(theta[i]-theta), theta)
+            #theta = np.where(((dr < 2*r)&(dr>0)), theta - 0.05*np.sin(deflection_angles), theta)
+            theta = np.where(((dr < 2*r)&(dr>0)), theta + 0.1*np.sin(theta[i]-neigh), theta)
+
+        #theta = theta + noise
+
 
         x += cross_x*v0x*np.cos(theta)*dt
         y += cross_y*v0y*np.sin(theta)*dt
 
 
-        yield x,y,theta,ori
+        yield x,y,theta,diff
           
 
 def find_gamma_angle(x, y, theta):
@@ -253,12 +262,13 @@ def scatter(x,y,theta):
     cmap = cm.gist_rainbow
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     temp = m.to_rgba(np.mod(theta,2*np.pi))
-    plt.scatter(x,y, c = temp, s = 22000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
-    # s = 40000
-    plt.xlim(0,100)
-    plt.ylim(0,100)
+    plt.scatter(x,y, c = temp, s = 15000, alpha = 0.9, marker = 'o',edgecolors='none',cmap = cm.gist_rainbow)
+    # s = 22k, r = 14
+    #colors = ['red', 'green', 'blue']
+    #plt.scatter(x,y, s = 50000, alpha = 0.9, marker = 'o', color = colors)
+    plt.xlim(-5,105)
+    plt.ylim(-5,105)
     
-
 
     for i in range(np.shape(x)[0]):
         vec_pointing = np.array(np.column_stack((np.cos(theta), np.sin(theta))))[i]
@@ -270,7 +280,8 @@ def scatter(x,y,theta):
     radius = 50
     a = 50+ radius * np.cos( theta )
     b = 50+ radius * np.sin( theta )
-    plt.plot(a, b, linewidth = 10)
+    plt.plot(a, b, linewidth = 10, color='k')
+    plt.axis( 'off' ) 
 
 def scatter_period(x,y):
     
